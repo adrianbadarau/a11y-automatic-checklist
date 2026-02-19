@@ -2,6 +2,7 @@
 import { Command } from 'commander';
 import { BrowserAdapter } from './browser.js';
 import { A11yEvaluator } from './evaluator.js';
+import { rules } from './rules.js';
 import * as dotenv from 'dotenv';
 import * as fs from 'fs/promises';
 import * as path from 'path';
@@ -17,6 +18,7 @@ program
     .option('-u, --url <url>', 'URL of the page to evaluate')
     .option('-d, --debugger-url <url>', 'URL of an open Chrome CDP interface (e.g. http://localhost:9222)')
     .option('-o, --output-test <filename>', 'Where to save the generated Playwright test script', 'generated-a11y.spec.ts')
+    .option('-v, --visual', 'Visually highlight elements matching current checking rules in browser')
     .action(async (options) => {
     if (!options.url && !options.debuggerUrl) {
         console.error('Error: You must provide either --url or --debugger-url');
@@ -30,8 +32,12 @@ program
             await browserAdapter.attachToDebugger(options.debuggerUrl);
         }
         else if (options.url) {
-            console.log(`Launching headless browser and navigating to ${options.url}...`);
-            await browserAdapter.init(options.url);
+            console.log(`Launching ${options.visual ? 'headed' : 'headless'} browser and navigating to ${options.url}...`);
+            await browserAdapter.init(options.url, options.visual);
+        }
+        if (options.visual) {
+            console.log('Running visual playback of accessibility rules...');
+            await browserAdapter.visualizeRules(rules);
         }
         console.log('Capturing DOM and Accessibility tree...');
         const snapshot = await browserAdapter.getPageSnapshot();
