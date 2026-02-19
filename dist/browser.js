@@ -2,8 +2,8 @@ import { chromium } from 'playwright';
 export class BrowserAdapter {
     browser = null;
     page = null;
-    async init(url) {
-        this.browser = await chromium.launch({ headless: true });
+    async init(url, visual = false) {
+        this.browser = await chromium.launch({ headless: !visual });
         // Create a new context
         const context = await this.browser.newContext();
         this.page = await context.newPage();
@@ -46,6 +46,61 @@ export class BrowserAdapter {
         }
         this.page = targetPage;
         return this.page;
+    }
+    async visualizeRules(rules) {
+        if (!this.page)
+            return;
+        for (const rule of rules) {
+            // Inject a banner and highlight styles into the page
+            await this.page.evaluate(({ description, selector }) => {
+                const existingBanner = document.getElementById('playwright-a11y-visual-banner');
+                if (existingBanner)
+                    existingBanner.remove();
+                const banner = document.createElement('div');
+                banner.id = 'playwright-a11y-visual-banner';
+                banner.style.position = 'fixed';
+                banner.style.top = '0';
+                banner.style.left = '0';
+                banner.style.width = '100%';
+                banner.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+                banner.style.color = '#fff';
+                banner.style.padding = '15px';
+                banner.style.fontSize = '24px';
+                banner.style.fontWeight = 'bold';
+                banner.style.textAlign = 'center';
+                banner.style.zIndex = '999999';
+                banner.style.pointerEvents = 'none';
+                banner.innerText = `Checking for rule: ${description}`;
+                document.body.appendChild(banner);
+                // Highlight matching elements
+                document.querySelectorAll('.playwright-a11y-highlight').forEach(el => {
+                    el.classList.remove('playwright-a11y-highlight');
+                    el.style.outline = '';
+                    el.style.outlineOffset = '';
+                    el.style.boxShadow = '';
+                });
+                document.querySelectorAll(selector).forEach(el => {
+                    el.classList.add('playwright-a11y-highlight');
+                    el.style.outline = '4px solid #ff00ff';
+                    el.style.outlineOffset = '2px';
+                    el.style.boxShadow = '0 0 10px #ff00ff';
+                });
+            }, { description: rule.description, selector: rule.selector });
+            // Wait 2 seconds so the user can see it
+            await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+        // Cleanup after all rules are checked
+        await this.page.evaluate(() => {
+            const existingBanner = document.getElementById('playwright-a11y-visual-banner');
+            if (existingBanner)
+                existingBanner.remove();
+            document.querySelectorAll('.playwright-a11y-highlight').forEach(el => {
+                el.classList.remove('playwright-a11y-highlight');
+                el.style.outline = '';
+                el.style.outlineOffset = '';
+                el.style.boxShadow = '';
+            });
+        });
     }
     async getPageSnapshot() {
         if (!this.page) {

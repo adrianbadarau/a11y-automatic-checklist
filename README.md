@@ -9,6 +9,7 @@ A Node.js tool that orchestrates Playwright, captures DOM and accessibility tree
   - Standard `--url <URL>` to launch a headless browser.
   - Remote Debugger `--debugger-url <URL>` to attach to an open Chrome browser and check the *exact page* the user is currently on! You can pass a simple HTTP endpoint (like `http://localhost:9222`) or a full websocket URL.
 - **AI Accessibility Evaluator**: Extracts a stripped-down HTML snapshot and the Chromium Accessibility Tree, combined with Deque reference rules, feeding into `gemini-2.5-flash`.
+- **Visual Playback Mode**: Use `--visual` to launch a headed browser and visually highlight elements matching the accessibility rules as they are evaluated.
 - **Test Generation**: Automatically extracts and saves a valid Playwright test (`generated-a11y.spec.ts`) that asserts for accessibility regressions locally on your codebase.
 
 ## Prerequisites
@@ -27,6 +28,12 @@ export GEMINI_API_KEY="AIza..."
 
 # Run the CLI
 npx tsx src/index.ts check --url https://dequeuniversity.com/demo/mars/ --output-test my-test.spec.ts
+```
+
+### 2. Visual Playback
+To visually see what the accessibility evaluator is checking, pass the `--visual` flag. The browser will open and highlight elements on the page for each rule:
+```bash
+npx tsx src/index.ts check --url https://example.com --visual
 ```
 
 ### 2. Checking an active browser (attaching)

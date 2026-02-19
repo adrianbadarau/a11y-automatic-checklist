@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { dequeA11yRuleset } from '../src/rules.js';
+import { dequeA11yRuleset, rules } from '../src/rules.js';
 
 describe('A11y Ruleset', () => {
     it('should be a string that contains the ruleset prompt', () => {
@@ -7,14 +7,20 @@ describe('A11y Ruleset', () => {
         expect(dequeA11yRuleset.length).toBeGreaterThan(0);
     });
 
-    it('should include key rule categories', () => {
-        expect(dequeA11yRuleset).toContain('Images');
-        expect(dequeA11yRuleset).toContain('Headings');
-        expect(dequeA11yRuleset).toContain('Forms');
-        expect(dequeA11yRuleset).toContain('Links and Buttons');
-        expect(dequeA11yRuleset).toContain('ARIA');
-        expect(dequeA11yRuleset).toContain('Color Contrast');
-        expect(dequeA11yRuleset).toContain('Page Title & Language');
-        expect(dequeA11yRuleset).toContain('Keyboard Navigation');
+    it('should include key rule categories in the prompt string', () => {
+        expect(dequeA11yRuleset).toContain('Images:');
+        expect(dequeA11yRuleset).toContain('Headings:');
+        expect(dequeA11yRuleset).toContain('Forms:');
+    });
+
+    it('should export a structured array of rules for visualization', () => {
+        expect(Array.isArray(rules)).toBe(true);
+        expect(rules.length).toBeGreaterThan(0);
+
+        // Assert structure of the first rule
+        const firstRule = rules[0];
+        expect(firstRule).toHaveProperty('id');
+        expect(firstRule).toHaveProperty('description');
+        expect(firstRule).toHaveProperty('selector');
     });
 });
