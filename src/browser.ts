@@ -120,74 +120,33 @@ export class BrowserAdapter {
         });
     }
 
-    async getPageSnapshot(): Promise<{ url: string; html: string; ariaTree: string }> {
+    async getPageSnapshot(): Promise<{ url: string; html: string; ariaTree: string; screenshot: string }> {
         if (!this.page) {
             throw new Error("Page not initialized.");
         }
 
-        // Get HTML enriched with visual structural cues
-        const html = await this.page.evaluate(`(() => {
-            function processNode(node) {
-                if (node.nodeType === Node.TEXT_NODE) {
-                    const text = node.textContent?.trim();
-                    if (!text) return null;
-                    return document.createTextNode(text);
-                }
+        // Get simplified HTML (stripping scripts and styles for LLM context size)
+        const html = await this.page.evaluate(() => {
+            const clone = document.documentElement.cloneNode(true) as HTMLElement;
+            clone.querySelectorAll('script, style, svg').forEach(el => el.remove());
+            return clone.outerHTML;
+        });
 
-                if (node.nodeType !== Node.ELEMENT_NODE) return null;
+        // Get approximate accessibility tree via CDP
+        let ariaTree = "{}";
+        try {
+            const client = await this.page.context().newCDPSession(this.page);
+            const { nodes } = await client.send('Accessibility.getFullAXTree');
+            ariaTree = JSON.stringify(nodes ?? [], null, 2);
+        } catch (e: any) {
+            console.warn("Could not fetch CDP accessibility tree:", e.message);
+        }
 
-                const el = node;
-                const tagName = el.tagName.toLowerCase();
+        // Take a full-page screenshot
+        const screenshotBuffer = await this.page.screenshot({ type: 'jpeg', quality: 60, fullPage: true });
+        const screenshot = screenshotBuffer.toString('base64');
 
-                // Skip non-visual/non-semantic nodes
-                if (['script', 'style', 'svg', 'noscript', 'meta', 'link', 'head'].includes(tagName)) {
-                    return null;
-                }
-
-                const clone = document.createElement(tagName);
-
-                // Copy relevant attributes
-                for (const attr of Array.from(el.attributes)) {
-                    clone.setAttribute(attr.name, attr.value);
-                }
-
-                // Add visual semantic hints
-                const style = window.getComputedStyle(el);
-                const rect = el.getBoundingClientRect();
-
-                // Only consider visible elements that have size
-                if (rect.width > 0 && rect.height > 0 && style.display !== 'none' && style.visibility !== 'hidden') {
-                    clone.setAttribute('data-rect', \`\${\~\~rect.top},\${\~\~rect.left},\${\~\~rect.width},\${\~\~rect.height}\`);
-
-                    if (style.backgroundImage && style.backgroundImage !== 'none') {
-                        clone.setAttribute('data-bg-image', style.backgroundImage);
-                    }
-                    if (style.fontSize) {
-                        clone.setAttribute('data-font-size', style.fontSize);
-                    }
-                    if (style.fontWeight && style.fontWeight !== '400') {
-                        clone.setAttribute('data-font-weight', style.fontWeight);
-                    }
-                    if (style.color) {
-                        clone.setAttribute('data-color', style.color);
-                    }
-                }
-
-                for (const child of Array.from(el.childNodes)) {
-                    const processedChild = processNode(child);
-                    if (processedChild) {
-                        clone.appendChild(processedChild);
-                    }
-                }
-
-                return clone;
-            }
-
-            const processedBody = processNode(document.body);
-            return processedBody ? processedBody.outerHTML : '<body></body>';
-        })()`) as string;
-
-        return { url: this.page.url(), html, ariaTree: "{}" };
+        return { url: this.page.url(), html, ariaTree, screenshot };
     }
 
     async close() {

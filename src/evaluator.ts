@@ -12,13 +12,14 @@ export class A11yEvaluator {
         this.ai = new GoogleGenAI({ apiKey });
     }
 
-    async evaluatePage(url: string, html: string, ariaTree: string, rules: A11yRule[]): Promise<string> {
+    async evaluatePage(url: string, html: string, ariaTree: string, screenshot: string, rules: A11yRule[]): Promise<string> {
         const options: RuleOptions = {
             ai: this.ai,
             model: this.model,
             url,
             html,
-            ariaTree
+            ariaTree,
+            screenshot
         };
 
         const rulePromises = rules.map(rule => rule.evaluate(options));

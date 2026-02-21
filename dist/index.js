@@ -4,6 +4,8 @@ import { BrowserAdapter } from './browser.js';
 import { A11yEvaluator } from './evaluator.js';
 import { allRules } from './rules/index.js';
 import * as dotenv from 'dotenv';
+import * as fs from 'fs/promises';
+import * as path from 'path';
 dotenv.config();
 const program = new Command();
 program
@@ -50,22 +52,23 @@ program
         console.log('Capturing DOM and Accessibility tree...');
         const snapshot = await browserAdapter.getPageSnapshot();
         console.log(`Sending snapshot to Gemini for evaluation against ${rulesToRun.length} rule(s)...`);
-        const resultText = await evaluator.evaluatePage(snapshot.url, snapshot.html, snapshot.ariaTree, rulesToRun);
+        const resultText = await evaluator.evaluatePage(snapshot.url, snapshot.html, snapshot.ariaTree, snapshot.screenshot, rulesToRun);
         // Print the full evaluation report
         console.log('\n========================================');
         console.log('          EVALUATION REPORT             ');
         console.log('========================================\n');
         console.log(resultText);
         // Extract the Playwright test code block
-        // const tsMatch = resultText.match(/```typescript\n([\s\S]*?)```/);
-        // if (tsMatch && tsMatch[1]) {
-        //     const testCode = tsMatch[1];
-        //     const outPath = path.resolve(process.cwd(), options.outputTest);
-        //     await fs.writeFile(outPath, testCode, 'utf-8');
-        //     console.log(`\n✅ Successfully generated Playwright test script at: ${outPath}`);
-        // } else {
-        //     console.log(`\n⚠️ No typescript block found in Gemini's response. Test script not generated.`);
-        // }
+        const tsMatch = resultText.match(/```typescript\n([\s\S]*?)```/);
+        if (tsMatch && tsMatch[1]) {
+            const testCode = tsMatch[1];
+            const outPath = path.resolve(process.cwd(), options.outputTest);
+            await fs.writeFile(outPath, testCode, 'utf-8');
+            console.log(`\n✅ Successfully generated Playwright test script at: ${outPath}`);
+        }
+        else {
+            console.log(`\n⚠️ No typescript block found in Gemini's response. Test script not generated.`);
+        }
     }
     catch (err) {
         console.error('\nError during execution:', err.message);

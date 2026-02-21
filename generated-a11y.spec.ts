@@ -6,48 +6,64 @@ test.describe('Accessibility Requirements', () => {
   });
 
   // Test cases for Rule 1: Images missing alt attributes
-  test('decorative images must have empty alt attributes', async ({ page }) => {
-    // Decorative border images
-    await expect(page.locator('img[src="./img/border_left_top.gif"]')).toHaveAttribute('alt', '');
-    await expect(page.locator('img[src="./img/border_top.gif"]')).toHaveAttribute('alt', '');
-    await expect(page.locator('img[src="./img/border_right_top.gif"]')).toHaveAttribute('alt', '');
-    await expect(page.locator('img[src="./img/border_left.gif"]')).toHaveAttribute('alt', '');
-    await expect(page.locator('img[src="./img/top_logo_next_end.gif"]')).toHaveAttribute('alt', '');
-    // Assuming top_weather.gif is decorative due to surrounding text describing the weather
-    await expect(page.locator('img[src="./img/top_weather.gif"]')).toHaveAttribute('alt', '');
-    await expect(page.locator('img[src="./img/top_logo_next_start.gif"]')).toHaveAttribute('alt', '');
-    await expect(page.locator('img[src="./img/mark.gif"]')).toHaveAttribute('alt', '');
-    // Image with a typo in src, still needs alt
-    await expect(page.locator('img[src=".img/marker2_w.gif"]')).toHaveAttribute('alt', '');
-    // First instance of marker2_w.gif within the main #page content area (left nav border)
-    await expect(page.locator('div#page table:nth-of-type(2) img[src="./img/marker2_w.gif"]').first()).toHaveAttribute('alt', '');
-    // First instance of marker2_t.gif within the main #page content area (left nav border)
-    await expect(page.locator('div#page table:nth-of-type(2) img[src="./img/marker2_t.gif"]').first()).toHaveAttribute('alt', '');
-    // Decorative spacer image
-    await expect(page.locator('img[src="./img/blank_5x5.gif"]')).toHaveAttribute('alt', '');
-    // Decorative headline icon, first of three
-    await expect(page.locator('img[src="./img/headline_middle.gif"]').first()).toHaveAttribute('alt', '');
-    // Decorative border images in the footer area
-    await expect(page.locator('td[background="./img/border_right.gif"] > img')).toHaveAttribute('alt', '');
-    await expect(page.locator('td[background="./img/border_bottom_left.gif"] > img')).toHaveAttribute('alt', '');
-    await expect(page.locator('td[background="./img/border_bottom.gif"] > img')).toHaveAttribute('alt', '');
-    await expect(page.locator('td[background="./img/border_bottom_right.gif"] > img')).toHaveAttribute('alt', '');
+  test('decorative images without alt should have empty alt', async ({ page }) => {
+      const decorativeImageSrcs = [
+          './img/border_left_top.gif',
+          './img/border_top.gif',
+          './img/border_right_top.gif',
+          './img/border_left.gif',
+          './img/top_logo_next_end.gif',
+          './img/top_logo_next_start.gif',
+          './img/mark.gif',
+          '.img/marker2_w.gif', // Typo in src path in the HTML
+          './img/marker2_w.gif',
+          './img/marker2_t.gif',
+          './img/blank_5x5.gif',
+          './img/headline_middle.gif',
+          './img/border_right.gif',
+          './img/border_bottom_left.gif',
+          './img/border_bottom.gif',
+          './img/border_bottom_right.gif'
+      ];
+  
+      for (const src of decorativeImageSrcs) {
+          const images = page.locator(`img[src="${src}"]`);
+          const count = await images.count();
+          // Assert that all instances of these decorative images should have an empty alt attribute
+          for (let i = 0; i < count; i++) {
+              await expect(images.nth(i), `Decorative image with src="${src}" should have alt=""`).toHaveAttribute('alt', '');
+          }
+      }
   });
   
-  test('informative navigation images must have descriptive alt attributes', async ({ page }) => {
-    // Navigation images from the left sidebar
-    await expect(page.locator('img[name="nav_home"]')).toHaveAttribute('alt', /Home/);
-    await expect(page.locator('img[name="nav_news"]')).toHaveAttribute('alt', /News/);
-    // The name is nav_facts but context implies it's for 'Tickets' page
-    await expect(page.locator('img[name="nav_facts"]')).toHaveAttribute('alt', /(Tickets|Facts)/); 
-    await expect(page.locator('img[name="nav_survey"]')).toHaveAttribute('alt', /Survey/);
+  test('decorative list bullets should have empty alt', async ({ page }) => {
+      // These decorative list bullets currently have alt="bullet" and should be empty.
+      const listBulletImages = page.locator('img[src="./img/list_bullets.gif"]');
+      const count = await listBulletImages.count();
+      for (let i = 0; i < count; i++) {
+          await expect(listBulletImages.nth(i), `Decorative list bullet image should have alt=""`).toHaveAttribute('alt', '');
+      }
   });
   
-  test('informative content images must have descriptive alt attributes', async ({ page }) => {
-    // Teaser images from the right sidebar
-    // The specific alt text will depend on the image content; regex checks for non-empty alt.
-    await expect(page.locator('img[src="./img/teaser_right1.jpg"]')).toHaveAttribute('alt', /.+/);
-    await expect(page.locator('img[src="./img/teaser_right2.jpg"]')).toHaveAttribute('alt', /.+/);
+  test('informative images without alt should have descriptive alt', async ({ page }) => {
+      // Informative images that need descriptive alt text (currently missing alt attribute)
+      const informativeImageLocators = [
+          page.locator('img[src="./img/top_weather.gif"]'),
+          page.locator('img[name="nav_home"]'),
+          page.locator('img[name="nav_news"]'),
+          page.locator('img[name="nav_facts"]'), // Represents 'Tickets' navigation
+          page.locator('img[name="nav_survey"]'),
+          page.locator('img[src="./img/teaser_right1.jpg"]'),
+          page.locator('img[src="./img/teaser_right2.jpg"]')
+      ];
+  
+      for (const locator of informativeImageLocators) {
+          // Assert that each informative image should have a non-empty alt attribute
+          // The .nth(0) is used to explicitly target the first element found by the locator if it's not unique by nature
+          await expect(locator.first(), 
+              `Informative image (src: ${await locator.first().getAttribute('src') || await locator.first().getAttribute('name')}) should have a descriptive alt attribute`
+          ).toHaveAttribute('alt', /.+/);
+      }
   });
 
 });
