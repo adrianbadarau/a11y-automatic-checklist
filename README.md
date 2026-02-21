@@ -9,7 +9,9 @@ A Node.js tool that orchestrates Playwright, captures DOM and accessibility tree
   - Standard `--url <URL>` to launch a headless browser.
   - Remote Debugger `--debugger-url <URL>` to attach to an open Chrome browser and check the *exact page* the user is currently on! You can pass a simple HTTP endpoint (like `http://localhost:9222`) or a full websocket URL.
 - **AI Accessibility Evaluator**: Extracts a stripped-down HTML snapshot and the Chromium Accessibility Tree, combined with Deque reference rules, feeding into `gemini-2.5-flash`.
+  - **✨ Modular Rules**: Rules are now evaluated concurrently in isolated modules, eliminating "1-shot" hallucinations.
 - **Visual Playback Mode**: Use `--visual` to launch a headed browser and visually highlight elements matching the accessibility rules as they are evaluated.
+- **Isolate Rules**: Use `--rule <id>` to selectively evaluate just a single rule.
 - **Test Generation**: Automatically extracts and saves a valid Playwright test (`generated-a11y.spec.ts`) that asserts for accessibility regressions locally on your codebase.
 
 ## Prerequisites
@@ -36,7 +38,13 @@ To visually see what the accessibility evaluator is checking, pass the `--visual
 npx tsx src/index.ts check --url https://example.com --visual
 ```
 
-### 2. Checking an active browser (attaching)
+### 3. Evaluating a Single Rule
+To run just one specific accessibility rule and speed up the evaluation, use the `--rule` flag with the rule ID. For example, to check only the Image Alt Attributes rule (ID 1):
+```bash
+npx tsx src/index.ts check --url https://example.com --rule 1
+```
+
+### 4. Checking an active browser (attaching)
 Start your Chrome browser with remote debugging enabled from your terminal:
 ```bash
 /Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --remote-debugging-port=9222
