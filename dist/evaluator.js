@@ -8,13 +8,14 @@ export class A11yEvaluator {
         }
         this.ai = new GoogleGenAI({ apiKey });
     }
-    async evaluatePage(url, html, ariaTree, rules) {
+    async evaluatePage(url, html, ariaTree, screenshot, rules) {
         const options = {
             ai: this.ai,
             model: this.model,
             url,
             html,
-            ariaTree
+            ariaTree,
+            screenshot
         };
         const rulePromises = rules.map(rule => rule.evaluate(options));
         const results = await Promise.all(rulePromises);

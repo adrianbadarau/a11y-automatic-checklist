@@ -120,7 +120,7 @@ export class BrowserAdapter {
         });
     }
 
-    async getPageSnapshot(): Promise<{ url: string; html: string; ariaTree: string }> {
+    async getPageSnapshot(): Promise<{ url: string; html: string; ariaTree: string; screenshot: string }> {
         if (!this.page) {
             throw new Error("Page not initialized.");
         }
@@ -142,7 +142,11 @@ export class BrowserAdapter {
             console.warn("Could not fetch CDP accessibility tree:", e.message);
         }
 
-        return { url: this.page.url(), html, ariaTree };
+        // Take a full-page screenshot
+        const screenshotBuffer = await this.page.screenshot({ type: 'jpeg', quality: 60, fullPage: true });
+        const screenshot = screenshotBuffer.toString('base64');
+
+        return { url: this.page.url(), html, ariaTree, screenshot };
     }
 
     async close() {

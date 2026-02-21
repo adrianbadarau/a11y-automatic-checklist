@@ -6,6 +6,7 @@ export interface RuleOptions {
     url: string;
     html: string;
     ariaTree: string;
+    screenshot: string;
 }
 
 export abstract class A11yRule {
@@ -34,6 +35,8 @@ Accessibility Tree (JSON):
 ${options.ariaTree.substring(0, 100000)}
 \`\`\`
 
+I have also attached a visual screenshot of the page. Use this screenshot along with the HTML and Accessibility Tree to perform your comprehensive visual accessibility assessment.
+
 Provide two sections in your response:
 1. "## Evaluation Report": A markdown summary of any accessibility violations found related to this specific rule, referencing specific elements or roles. Also note what passes if it's prominently accessible. If no elements match this rule, state that clearly.
 2. "## Playwright Test": One or more valid Playwright \`test('...', async ({ page }) => { ... })\` blocks that cover regressions for the elements mentioned.
@@ -49,7 +52,15 @@ Start your response now.
 
         const response = await options.ai.models.generateContent({
             model: options.model,
-            contents: prompt,
+            contents: [
+                prompt,
+                {
+                    inlineData: {
+                        data: options.screenshot,
+                        mimeType: 'image/jpeg'
+                    }
+                }
+            ],
         });
 
         return response.text ?? 'No evaluation produced.';

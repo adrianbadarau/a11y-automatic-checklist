@@ -62,7 +62,7 @@ program
             const snapshot = await browserAdapter.getPageSnapshot();
 
             console.log(`Sending snapshot to Gemini for evaluation against ${rulesToRun.length} rule(s)...`);
-            const resultText = await evaluator.evaluatePage(snapshot.url, snapshot.html, snapshot.ariaTree, rulesToRun);
+            const resultText = await evaluator.evaluatePage(snapshot.url, snapshot.html, snapshot.ariaTree, snapshot.screenshot, rulesToRun);
 
             // Print the full evaluation report
             console.log('\n========================================');
