@@ -1,5 +1,5 @@
 import { chromium, Browser, Page } from 'playwright';
-import { Rule } from './rules.js';
+import { A11yRule } from './rules/index.js';
 
 export class BrowserAdapter {
     private browser: Browser | null = null;
@@ -60,7 +60,7 @@ export class BrowserAdapter {
         return this.page;
     }
 
-    async visualizeRules(rules: Rule[]) {
+    async visualizeRules(rules: A11yRule[]) {
         if (!this.page) return;
 
         for (const rule of rules) {

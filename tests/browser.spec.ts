@@ -1,6 +1,6 @@
 import { describe, it, expect, afterEach, beforeEach } from 'vitest';
 import { BrowserAdapter } from '../src/browser.js';
-import { Rule } from '../src/rules.js';
+import { A11yRule } from '../src/rules/index.js';
 
 describe('BrowserAdapter', () => {
     let adapter: BrowserAdapter;
@@ -38,9 +38,9 @@ describe('BrowserAdapter', () => {
     });
 
     it('should visualize rules if the visualize method is called', async () => {
-        const dummyRules: Rule[] = [
-            { id: 1, description: 'Test Rule', selector: 'h1', promptText: 'Test' }
-        ];
+        const dummyRules = [
+            { id: 1, description: 'Test Rule', selector: 'h1' }
+        ] as any as A11yRule[];
 
         const dataUrl = 'data:text/html,<html><body><h1>Test H1</h1></body></html>';
         const page = await adapter.init(dataUrl);
