@@ -1,26 +1,47 @@
-import { describe, it, expect } from 'vitest';
-import { dequeA11yRuleset, rules } from '../src/rules.js';
+import { describe, it, expect, vi } from 'vitest';
+import { allRules, ImageAltRule } from '../src/rules/index.js';
 
-describe('A11y Ruleset', () => {
-    it('should be a string that contains the ruleset prompt', () => {
-        expect(typeof dequeA11yRuleset).toBe('string');
-        expect(dequeA11yRuleset.length).toBeGreaterThan(0);
+describe('Modular A11y Rules', () => {
+    it('should export all 8 rules in the allRules array', () => {
+        expect(allRules.length).toBe(8);
     });
 
-    it('should include key rule categories in the prompt string', () => {
-        expect(dequeA11yRuleset).toContain('Images:');
-        expect(dequeA11yRuleset).toContain('Headings:');
-        expect(dequeA11yRuleset).toContain('Forms:');
+    it('each rule should have an id, description, and selector', () => {
+        for (const rule of allRules) {
+            expect(rule.id).toBeDefined();
+            expect(typeof rule.description).toBe('string');
+            expect(typeof rule.selector).toBe('string');
+        }
     });
 
-    it('should export a structured array of rules for visualization', () => {
-        expect(Array.isArray(rules)).toBe(true);
-        expect(rules.length).toBeGreaterThan(0);
+    it('should instantiate individual rules correctly', () => {
+        const imgRule = new ImageAltRule();
+        expect(imgRule.id).toBe(1);
+        expect(imgRule.selector).toBe('img');
+        expect(imgRule.description).toContain('Images missing alt');
+    });
 
-        // Assert structure of the first rule
-        const firstRule = rules[0];
-        expect(firstRule).toHaveProperty('id');
-        expect(firstRule).toHaveProperty('description');
-        expect(firstRule).toHaveProperty('selector');
+    it('should format evaluate prompt correctly for a rule', async () => {
+        const mockAi = {
+            models: {
+                generateContent: vi.fn().mockResolvedValue({ text: 'mock AI response' })
+            }
+        };
+        const rule = new ImageAltRule();
+        const res = await rule.evaluate({
+            ai: mockAi as any,
+            model: 'test-model',
+            url: 'http://test.com',
+            html: '<img src="a.png" />',
+            ariaTree: '{}'
+        });
+
+        expect(res).toBe('mock AI response');
+        expect(mockAi.models.generateContent).toHaveBeenCalled();
+
+        const callArgs = mockAi.models.generateContent.mock.calls[0][0];
+        expect(callArgs.model).toBe('test-model');
+        expect(callArgs.contents).toContain('Images: All `<img>` elements must have an `alt` attribute');
     });
 });
+

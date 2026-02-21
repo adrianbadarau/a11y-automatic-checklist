@@ -32,8 +32,14 @@ describe('A11yEvaluator', () => {
         const html = '<html><body><h1>Test</h1></body></html>';
         const ariaTree = '{}';
 
-        const result = await evaluator.evaluatePage(url, html, ariaTree);
+        const mockRule = {
+            id: 1,
+            description: 'Mock',
+            evaluate: vi.fn().mockResolvedValue('## Evaluation Report\nEverything passed!\n\n```typescript\ntest("mock", async ({ page }) => {});\n```')
+        } as any;
+
+        const result = await evaluator.evaluatePage(url, html, ariaTree, [mockRule]);
         expect(result).toContain('Evaluation Report');
-        expect(result).toContain('fake test');
+        expect(result).toContain('test("mock"');
     });
 });

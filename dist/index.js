@@ -2,7 +2,7 @@
 import { Command } from 'commander';
 import { BrowserAdapter } from './browser.js';
 import { A11yEvaluator } from './evaluator.js';
-import { rules } from './rules.js';
+import { allRules } from './rules/index.js';
 import * as dotenv from 'dotenv';
 import * as fs from 'fs/promises';
 import * as path from 'path';
@@ -19,10 +19,20 @@ program
     .option('-d, --debugger-url <url>', 'URL of an open Chrome CDP interface (e.g. http://localhost:9222)')
     .option('-o, --output-test <filename>', 'Where to save the generated Playwright test script', 'generated-a11y.spec.ts')
     .option('-v, --visual', 'Visually highlight elements matching current checking rules in browser')
+    .option('-r, --rule <id>', 'Run only a specific rule by its ID')
     .action(async (options) => {
     if (!options.url && !options.debuggerUrl) {
         console.error('Error: You must provide either --url or --debugger-url');
         process.exit(1);
+    }
+    let rulesToRun = allRules;
+    if (options.rule) {
+        const ruleId = parseInt(options.rule, 10);
+        rulesToRun = allRules.filter(r => r.id === ruleId);
+        if (rulesToRun.length === 0) {
+            console.error(`Error: Rule with ID ${options.rule} not found.`);
+            process.exit(1);
+        }
     }
     const browserAdapter = new BrowserAdapter();
     const evaluator = new A11yEvaluator(process.env.GEMINI_API_KEY);
@@ -37,12 +47,12 @@ program
         }
         if (options.visual) {
             console.log('Running visual playback of accessibility rules...');
-            await browserAdapter.visualizeRules(rules);
+            await browserAdapter.visualizeRules(rulesToRun);
         }
         console.log('Capturing DOM and Accessibility tree...');
         const snapshot = await browserAdapter.getPageSnapshot();
-        console.log('Sending snapshot to Gemini for evaluation against Deque rules...');
-        const resultText = await evaluator.evaluatePage(snapshot.url, snapshot.html, snapshot.ariaTree);
+        console.log(`Sending snapshot to Gemini for evaluation against ${rulesToRun.length} rule(s)...`);
+        const resultText = await evaluator.evaluatePage(snapshot.url, snapshot.html, snapshot.ariaTree, rulesToRun);
         // Print the full evaluation report
         console.log('\n========================================');
         console.log('          EVALUATION REPORT             ');
