@@ -28,6 +28,7 @@ export GEMINI_API_KEY="AIza..."
 
 # Run the CLI
 npx tsx src/index.ts check --url https://dequeuniversity.com/demo/mars/ --output-test my-test.spec.ts
+npx tsx src/index.ts check --url https://www.w3.org/WAI/demos/bad/before/home.html/ 
 ```
 
 ### 2. Visual Playback

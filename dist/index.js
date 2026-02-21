@@ -42,7 +42,7 @@ program
         console.log('Capturing DOM and Accessibility tree...');
         const snapshot = await browserAdapter.getPageSnapshot();
         console.log('Sending snapshot to Gemini for evaluation against Deque rules...');
-        const resultText = await evaluator.evaluatePage(snapshot.url, snapshot.html, snapshot.ariaTree);
+        const resultText = await evaluator.evaluatePage(snapshot.url, snapshot.html, snapshot.ariaTree, snapshot.screenshotBase64);
         // Print the full evaluation report
         console.log('\n========================================');
         console.log('          EVALUATION REPORT             ');

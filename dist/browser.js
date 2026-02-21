@@ -122,7 +122,15 @@ export class BrowserAdapter {
         catch (e) {
             console.warn("Could not fetch CDP accessibility tree:", e.message);
         }
-        return { url: this.page.url(), html, ariaTree };
+        let screenshotBase64;
+        try {
+            const buffer = await this.page.screenshot({ type: 'png', fullPage: true });
+            screenshotBase64 = buffer.toString('base64');
+        }
+        catch (e) {
+            console.warn("Could not capture page screenshot:", e.message);
+        }
+        return { url: this.page.url(), html, ariaTree, screenshotBase64 };
     }
     async close() {
         if (this.browser) {

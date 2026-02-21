@@ -31,6 +31,9 @@ describe('BrowserAdapter', () => {
         expect(snapshot.url).toBe(dataUrl);
         // Ensure accessibility tree is generated (might be "{}" depending on dummy page complexity in pure headless, but we expect it to exist as a string)
         expect(typeof snapshot.ariaTree).toBe('string');
+        // Ensure a screenshot is returned as a base64 string
+        expect(typeof snapshot.screenshotBase64).toBe('string');
+        expect(snapshot.screenshotBase64?.length).toBeGreaterThan(0);
     });
 
     it('should throw if getting snapshot without initializing', async () => {
