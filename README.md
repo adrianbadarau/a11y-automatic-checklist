@@ -42,6 +42,7 @@ npx tsx src/index.ts check --url https://example.com --visual
 To run just one specific accessibility rule and speed up the evaluation, use the `--rule` flag with the rule ID. For example, to check only the Image Alt Attributes rule (ID 1):
 ```bash
 npx tsx src/index.ts check --url https://example.com --rule 1
+npx tsx src/index.ts check --url https://www.w3.org/WAI/demos/bad/before/home.html --rule 3 --visual
 ```
 
 ### 4. Checking an active browser (attaching)

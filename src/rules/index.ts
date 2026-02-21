@@ -29,4 +29,5 @@ export {
     KeyboardNavRule
 };
 
-export { A11yRule, RuleOptions } from './Rule.js';
+export { A11yRule } from './Rule.js';
+export type { RuleOptions } from './Rule.js';
