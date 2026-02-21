@@ -24,14 +24,9 @@ Evaluate the provided web page representation against the following rule:
 
 ${this.promptText}
 
-Page HTML Snapshot:
+Page HTML Snapshot (with visual cues like bounding boxes, background images, font details injected as data-* attributes):
 \`\`\`html
 ${options.html.substring(0, 150000)}
-\`\`\`
-
-Accessibility Tree (JSON):
-\`\`\`json
-${options.ariaTree.substring(0, 100000)}
 \`\`\`
 
 Provide two sections in your response:
@@ -40,7 +35,7 @@ Provide two sections in your response:
 
 CRITICAL TEST REQUIREMENTS:
 - DO NOT include \`import\` statements, \`test.describe\`, or \`test.beforeEach\` blocks. Only provide the \`test(...)\` blocks themselves.
-- DO NOT generate generic assertions. Your locators (e.g. \`page.locator('...')\`) MUST specifically target the exact elements, IDs, classes, or text contents you found in the provided HTML snapshot and Accessibility Tree that relate to this rule.
+- DO NOT generate generic assertions. Your locators (e.g. \`page.locator('...')\`) MUST specifically target the exact elements, IDs, classes, or text contents you found in the provided HTML snapshot that relate to this rule.
 - If an element violates a rule, write an assertion that EXPECTS it to meet the rule (e.g. if an img lacks an alt, write \`await expect(page.locator('img.logo')).toHaveAttribute('alt', /.+/)\` so the test will accurately fail until the user fixes their code).
 - Wrap the TypeScript code in a single \`\`\`typescript block.
 

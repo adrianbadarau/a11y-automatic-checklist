@@ -17,7 +17,7 @@ case "$1" in
     echo " Running with bad URL (Inaccessible Version)     "
     echo "================================================="
     echo "Generating Playwright tests..."
-    npx tsx src/index.ts check --url https://www.w3.org/WAI/demos/bad/before/home.html --rule 3 --visual
+    npx tsx src/index.ts check --url https://www.w3.org/WAI/demos/bad/before/home.html --rule 1 --visual
     
     echo ""
     echo "Running generated Playwright tests..."
