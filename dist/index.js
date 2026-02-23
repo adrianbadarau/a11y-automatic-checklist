@@ -20,6 +20,7 @@ program
     .option('-o, --output-test <filename>', 'Where to save the generated Playwright test script', 'generated-a11y.spec.ts')
     .option('-v, --visual', 'Visually highlight elements matching current checking rules in browser')
     .option('-r, --rule <id>', 'Run only a specific rule by its ID')
+    .option('-c, --container-id <id>', 'ID of the container element to evaluate (for partial page testing)')
     .action(async (options) => {
     if (!options.url && !options.debuggerUrl) {
         console.error('Error: You must provide either --url or --debugger-url');
@@ -33,6 +34,10 @@ program
             console.error(`Error: Rule with ID ${options.rule} not found.`);
             process.exit(1);
         }
+    }
+    if (options.containerId) {
+        rulesToRun = rulesToRun.filter(r => !r.fullPageOnly);
+        console.log(`Partial page testing enabled for container ID: '${options.containerId}'. Filtered rules: ${rulesToRun.length} remaining.`);
     }
     const browserAdapter = new BrowserAdapter();
     const evaluator = new A11yEvaluator(process.env.GEMINI_API_KEY);
@@ -50,7 +55,7 @@ program
             await browserAdapter.visualizeRules(rulesToRun);
         }
         console.log('Capturing DOM and Accessibility tree...');
-        const snapshot = await browserAdapter.getPageSnapshot();
+        const snapshot = await browserAdapter.getPageSnapshot(options.containerId);
         console.log(`Sending snapshot to Gemini for evaluation against ${rulesToRun.length} rule(s)...`);
         const resultText = await evaluator.evaluatePage(snapshot.url, snapshot.html, snapshot.ariaTree, snapshot.screenshot, rulesToRun);
         // Print the full evaluation report

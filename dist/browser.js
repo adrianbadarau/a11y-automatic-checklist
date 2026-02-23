@@ -102,16 +102,24 @@ export class BrowserAdapter {
             });
         });
     }
-    async getPageSnapshot() {
+    async getPageSnapshot(containerId) {
         if (!this.page) {
             throw new Error("Page not initialized.");
         }
         // Get simplified HTML (stripping scripts and styles for LLM context size)
-        const html = await this.page.evaluate(() => {
-            const clone = document.documentElement.cloneNode(true);
+        const html = await this.page.evaluate((cid) => {
+            let targetNode = document.documentElement;
+            if (cid) {
+                const el = document.getElementById(cid);
+                if (!el) {
+                    throw new Error(`Container element with id '${cid}' not found on the page.`);
+                }
+                targetNode = el;
+            }
+            const clone = targetNode.cloneNode(true);
             clone.querySelectorAll('script, style, svg').forEach(el => el.remove());
             return clone.outerHTML;
-        });
+        }, containerId);
         // Get approximate accessibility tree via CDP
         let ariaTree = "{}";
         try {
