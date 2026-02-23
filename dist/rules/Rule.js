@@ -1,4 +1,5 @@
 export class A11yRule {
+    fullPageOnly;
     /**
      * Evaluates the provided HTML/ARIA tree against this specific rule using the LLM.
      */
@@ -26,7 +27,7 @@ Provide two sections in your response:
 2. "## Playwright Test": One or more valid Playwright \`test('...', async ({ page }) => { ... })\` blocks that cover regressions for the elements mentioned.
 
 CRITICAL TEST REQUIREMENTS:
-- DO NOT include \`import\` statements, \`test.describe\`, or \`test.beforeEach\` blocks. Only provide the \`test(...)\` blocks themselves.
+- DO NOT include \`import\` statements at all. They are already provided. DO NOT include \`test.describe\`, or \`test.beforeEach\` blocks. Only provide the \`test(...)\` blocks themselves.
 - DO NOT generate generic assertions. Your locators (e.g. \`page.locator('...')\`) MUST specifically target the exact elements, IDs, classes, or text contents you found in the provided HTML snapshot and Accessibility Tree that relate to this rule.
 - If an element violates a rule, write an assertion that EXPECTS it to meet the rule (e.g. if an img lacks an alt, write \`await expect(page.locator('img.logo')).toHaveAttribute('alt', /.+/)\` so the test will accurately fail until the user fixes their code).
 - Wrap the TypeScript code in a single \`\`\`typescript block.
