@@ -12,8 +12,73 @@ export class A11yEvaluator {
         this.ai = new GoogleGenAI({ apiKey });
     }
 
-    async evaluatePage(url: string, html: string, ariaTree: string, screenshot: string, rules: A11yRule[]): Promise<string> {
-        const options: RuleOptions = {
+    async evaluatePage(initialUrl: string, browserAdapter: any, rules: A11yRule[], options: { containerId?: string, visual?: boolean } = {}): Promise<string> {
+        let additionalSelectors: string[] = [];
+        let html = "";
+        let ariaTree = "";
+        let screenshot = "";
+        let url = initialUrl;
+
+        const MAX_ITERATIONS = 3;
+        for (let i = 0; i < MAX_ITERATIONS; i++) {
+            const isLastIteration = i === MAX_ITERATIONS - 1;
+            const keepBadges = options.visual || isLastIteration;
+
+            const snapshot = await browserAdapter.applyBadges(additionalSelectors, {
+                visual: options.visual,
+                keepBadges,
+                containerId: options.containerId
+            });
+
+            html = snapshot.html;
+            ariaTree = snapshot.ariaTree;
+            screenshot = snapshot.screenshot;
+            url = snapshot.url;
+
+            if (isLastIteration) {
+                break;
+            }
+
+            const iterationPrompt = `
+You are an expert web accessibility evaluator. 
+I have attached a screenshot of a web page that has been annotated with numbered red badges.
+Are there any visually apparent interactive or semantic elements (like background images or headings) on the page that LACK a numbered red badge?
+If so, provide a JSON array of precise CSS selectors for these elements.
+If not, or if all important elements are already badged, return an empty array [].
+Respond ONLY with the JSON array.
+`;
+            const response = await this.ai.models.generateContent({
+                model: this.model,
+                contents: [
+                    iterationPrompt,
+                    {
+                        inlineData: {
+                            data: screenshot,
+                            mimeType: 'image/jpeg'
+                        }
+                    }
+                ],
+            });
+
+            const text = response.text || "[]";
+            let newSelectors: string[] = [];
+            try {
+                // Strip markdown code block formatting if present
+                let cleanText = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+                newSelectors = JSON.parse(cleanText);
+            } catch (e) {
+                console.warn("Failed to parse LLM selector suggestion. Raw text:", text);
+            }
+
+            if (newSelectors.length === 0) {
+                // LLM found no missing elements
+                break;
+            }
+
+            additionalSelectors.push(...newSelectors);
+        }
+
+        const ruleOptions: RuleOptions = {
             ai: this.ai,
             model: this.model,
             url,
@@ -22,7 +87,7 @@ export class A11yEvaluator {
             screenshot
         };
 
-        const rulePromises = rules.map(rule => rule.evaluate(options));
+        const rulePromises = rules.map(rule => rule.evaluate(ruleOptions));
         const results = await Promise.all(rulePromises);
 
         let combinedReport = `## Integrated Accessibility Evaluation Report\n\n`;

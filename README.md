@@ -10,6 +10,7 @@ A Node.js tool that orchestrates Playwright, captures DOM and accessibility tree
   - Remote Debugger `--debugger-url <URL>` to attach to an open Chrome browser and check the *exact page* the user is currently on! You can pass a simple HTTP endpoint (like `http://localhost:9222`) or a full websocket URL.
 - **AI Accessibility Evaluator**: Extracts a stripped-down HTML snapshot and the Chromium Accessibility Tree, combined with Deque reference rules, feeding into `gemini-2.5-flash`.
   - **✨ Modular Rules**: Rules are now evaluated concurrently in isolated modules, eliminating "1-shot" hallucinations.
+  - **✨ Iterative Visual Markers**: Uses Set-of-Mark and up to 3 LLM vision queries to visually find hidden/CSS elements missed by standard locators. ([Read more](./docs/iterative-visual-markers.md))
 - **Visual Playback Mode**: Use `--visual` to launch a headed browser and visually highlight elements matching the accessibility rules as they are evaluated.
 - **Isolate Rules**: Use `--rule <id>` to selectively evaluate just a single rule.
 - **Test Generation**: Automatically extracts and saves a valid Playwright test (`generated-a11y.spec.ts`) that asserts for accessibility regressions locally on your codebase.

@@ -26,7 +26,7 @@ describe('BrowserAdapter', () => {
 
         expect(page.url()).toBe(dataUrl);
 
-        const snapshot = await adapter.getPageSnapshot();
+        const snapshot = await adapter.applyBadges();
         expect(snapshot.html).toContain('Hello World');
         expect(snapshot.url).toBe(dataUrl);
         // Ensure accessibility tree is generated (might be "{}" depending on dummy page complexity in pure headless, but we expect it to exist as a string)
@@ -34,9 +34,27 @@ describe('BrowserAdapter', () => {
     });
 
     it('should throw if getting snapshot without initializing', async () => {
-        await expect(adapter.getPageSnapshot()).rejects.toThrow(/Page not initialized/);
+        await expect(adapter.applyBadges()).rejects.toThrow(/Page not initialized/);
     });
 
+    it('should apply badges for additional selectors', async () => {
+        const dataUrl = 'data:text/html,<html><body><div class="test-element">Hello</div></body></html>';
+        await adapter.init(dataUrl);
+
+        const snapshot = await adapter.applyBadges(['.test-element']);
+        // The element should have data-playwright-a11y-id
+        expect(snapshot.html).toContain('data-playwright-a11y-id');
+    });
+
+    it('should keep badges in the DOM when keepBadges is true', async () => {
+        const dataUrl = 'data:text/html,<html><body><h1>Keep me</h1></body></html>';
+        await adapter.init(dataUrl);
+
+        const snapshot = await adapter.applyBadges([], { keepBadges: true });
+        // The LIVE PAGE should still contain the badge, even if snapshot.html cleans it up for parsing
+        const hasBadge = await (adapter as any).page.evaluate(() => !!document.querySelector('.playwright-a11y-badge'));
+        expect(hasBadge).toBe(true);
+    });
     it('should visualize rules if the visualize method is called', async () => {
         const dummyRules = [
             { id: 1, description: 'Test Rule', selector: 'h1' }
@@ -51,7 +69,7 @@ describe('BrowserAdapter', () => {
         // After visualization we should expect the banner was injected and then removed.
         // It's hard to test the intermediate states without a complex mock, but we can
         // ensure it runs without throwing and doesn't pollute the final snapshot.
-        const snapshot = await adapter.getPageSnapshot();
+        const snapshot = await adapter.applyBadges();
         expect(snapshot.html).toContain('Test H1');
         expect(snapshot.html).not.toContain('playwright-a11y-visual-banner'); // Ensure banner is cleaned up
     });

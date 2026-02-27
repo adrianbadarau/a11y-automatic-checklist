@@ -1,0 +1,16 @@
+
+[1m[46m RUN [49m[22m [36mv4.0.18 [39m[90m/Users/adrianbadarau/code/projects/playwright-a11y-checklist[39m
+
+ [31m❯[39m tests/browser.spec.ts [2m([22m[2m6 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[33m 5015[2mms[22m[39m
+     [33m[2m✓[22m[39m should initialize a browser and return a page [33m 431[2mms[22m[39m
+     [33m[2m✓[22m[39m should navigate to a url if provided during init [33m 645[2mms[22m[39m
+     [32m✓[39m should throw if getting snapshot without initializing[32m 1[2mms[22m[39m
+     [33m[2m✓[22m[39m should apply badges for additional selectors [33m 647[2mms[22m[39m
+[31m     [31m×[31m should keep badges in the DOM when keepBadges is true[39m[33m 643[2mms[22m[39m
+     [33m[2m✓[22m[39m should visualize rules if the visualize method is called [33m 2647[2mms[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m5 passed[39m[22m[90m (6)[39m
+[2m   Start at [22m 19:52:20
+[2m   Duration [22m 5.25s[2m (transform 18ms, setup 0ms, import 156ms, tests 5.02s, environment 0ms)[22m
+

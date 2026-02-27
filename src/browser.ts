@@ -120,27 +120,64 @@ export class BrowserAdapter {
         });
     }
 
-    async getPageSnapshot(containerId?: string): Promise<{ url: string; html: string; ariaTree: string; screenshot: string }> {
+    async applyBadges(additionalSelectors: string[] = [], options: { visual?: boolean, keepBadges?: boolean, containerId?: string } = {}): Promise<{ url: string; html: string; ariaTree: string; screenshot: string }> {
         if (!this.page) {
             throw new Error("Page not initialized.");
         }
 
-        // Get simplified HTML (stripping scripts and styles for LLM context size)
-        const html = await this.page.evaluate((cid) => {
+        const { containerId, visual, keepBadges } = options;
+
+        // 1. Inject Set-of-Mark badges
+        await this.page.evaluate(({ cid, extraSelectors }) => {
             let targetNode = document.documentElement;
             if (cid) {
                 const el = document.getElementById(cid);
-                if (!el) {
-                    throw new Error(`Container element with id '${cid}' not found on the page.`);
-                }
-                targetNode = el;
+                if (el) targetNode = el;
             }
-            const clone = targetNode.cloneNode(true) as HTMLElement;
-            clone.querySelectorAll('script, style, svg').forEach(el => el.remove());
-            return clone.outerHTML;
-        }, containerId);
 
-        // Get approximate accessibility tree via CDP
+            const baseSelectors = ['img', 'a', 'button', 'input', 'select', 'textarea', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', '[role]'];
+            const allSelectors = [...baseSelectors, ...extraSelectors].join(', ');
+
+            const somElements = targetNode.querySelectorAll(allSelectors);
+            let counter = 1;
+
+            somElements.forEach(el => {
+                const rect = el.getBoundingClientRect();
+                // Basic visibility check
+                if (rect.width === 0 || rect.height === 0) return;
+
+                const id = counter++;
+                el.setAttribute('data-playwright-a11y-id', id.toString());
+
+                const badge = document.createElement('div');
+                badge.className = 'playwright-a11y-badge';
+                badge.textContent = id.toString();
+                badge.style.position = 'absolute';
+                badge.style.top = (rect.top + window.scrollY) + 'px';
+                badge.style.left = (rect.left + window.scrollX) + 'px';
+                badge.style.backgroundColor = 'red';
+                badge.style.color = 'white';
+                badge.style.fontSize = '12px';
+                badge.style.fontWeight = 'bold';
+                badge.style.padding = '2px 4px';
+                badge.style.borderRadius = '3px';
+                badge.style.zIndex = '2147483647';
+                badge.style.pointerEvents = 'none';
+                badge.setAttribute('aria-hidden', 'true');
+
+                document.body.appendChild(badge);
+            });
+        }, { cid: containerId, extraSelectors: additionalSelectors });
+
+        if (visual) {
+            await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+
+        // 2. Take screenshot with badges injected
+        const screenshotBuffer = await this.page.screenshot({ type: 'jpeg', quality: 60, fullPage: true });
+        const screenshot = screenshotBuffer.toString('base64');
+
+        // 3. Get ARIA tree via CDP
         let ariaTree = "{}";
         try {
             const client = await this.page.context().newCDPSession(this.page);
@@ -150,9 +187,30 @@ export class BrowserAdapter {
             console.warn("Could not fetch CDP accessibility tree:", e.message);
         }
 
-        // Take a full-page screenshot
-        const screenshotBuffer = await this.page.screenshot({ type: 'jpeg', quality: 60, fullPage: true });
-        const screenshot = screenshotBuffer.toString('base64');
+        // 4. Get HTML and cleanup DOM
+        const html = await this.page.evaluate(({ cid, shouldCleanup }) => {
+            let targetNode = document.documentElement;
+            if (cid) {
+                const el = document.getElementById(cid);
+                if (!el) {
+                    throw new Error(`Container element with id '${cid}' not found on the page.`);
+                }
+                targetNode = el;
+            }
+
+            // Clone to serialize safely without scripts/styles
+            const clone = targetNode.cloneNode(true) as HTMLElement;
+            clone.querySelectorAll('script, style, svg, .playwright-a11y-badge').forEach(el => el.remove());
+            const outerHTML = clone.outerHTML;
+
+            if (shouldCleanup) {
+                // Cleanup the actual page DOM so we don't leave artifacts if the page is re-used
+                document.querySelectorAll('.playwright-a11y-badge').forEach(el => el.remove());
+                document.querySelectorAll('[data-playwright-a11y-id]').forEach(el => el.removeAttribute('data-playwright-a11y-id'));
+            }
+
+            return outerHTML;
+        }, { cid: containerId, shouldCleanup: !keepBadges });
 
         return { url: this.page.url(), html, ariaTree, screenshot };
     }

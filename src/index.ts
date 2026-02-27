@@ -64,11 +64,9 @@ program
                 await browserAdapter.visualizeRules(rulesToRun);
             }
 
-            console.log('Capturing DOM and Accessibility tree...');
-            const snapshot = await browserAdapter.getPageSnapshot(options.containerId);
-
-            console.log(`Sending snapshot to Gemini for evaluation against ${rulesToRun.length} rule(s)...`);
-            const resultText = await evaluator.evaluatePage(snapshot.url, snapshot.html, snapshot.ariaTree, snapshot.screenshot, rulesToRun);
+            console.log(`Evaluating page using iterative LLM loop against ${rulesToRun.length} rule(s)...`);
+            const targetUrl = options.url || 'http://localhost'; // Evaluator will use snapshot.url anyway
+            const resultText = await evaluator.evaluatePage(targetUrl, browserAdapter, rulesToRun, { containerId: options.containerId, visual: options.visual });
 
             // Print the full evaluation report
             console.log('\n========================================');

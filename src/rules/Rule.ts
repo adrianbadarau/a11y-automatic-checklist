@@ -36,15 +36,17 @@ Accessibility Tree (JSON):
 ${options.ariaTree.substring(0, 100000)}
 \`\`\`
 
-I have also attached a visual screenshot of the page. Use this screenshot along with the HTML and Accessibility Tree to perform your comprehensive visual accessibility assessment.
+I have also attached a visual screenshot of the page. The screenshot has been annotated with numbered badges indicating the position of interactive and semantic elements. These numbers correspond directly to the \`data-playwright-a11y-id\` attribute on elements in the provided HTML snapshot. Use this screenshot along with the HTML and Accessibility Tree to perform your comprehensive visual accessibility assessment.
+
+If you identify a visual violation, find its badge number, look up the corresponding element in the HTML using the \`data-playwright-a11y-id\`, and formulate your evaluation based on it.
 
 Provide two sections in your response:
-1. "## Evaluation Report": A markdown summary of any accessibility violations found related to this specific rule, referencing specific elements or roles. Also note what passes if it's prominently accessible. If no elements match this rule, state that clearly.
+1. "## Evaluation Report": A markdown summary of any accessibility violations found related to this specific rule. Reference specific elements or roles, and include the badge number when applicable (e.g., "Badge 5 (\`<button class='submit'>\`): missing aria-label"). Also note what passes if it's prominently accessible. If no elements match this rule, state that clearly.
 2. "## Playwright Test": One or more valid Playwright \`test('...', async ({ page }) => { ... })\` blocks that cover regressions for the elements mentioned.
 
 CRITICAL TEST REQUIREMENTS:
 - DO NOT include \`import\` statements at all. They are already provided. DO NOT include \`test.describe\`, or \`test.beforeEach\` blocks. Only provide the \`test(...)\` blocks themselves.
-- DO NOT generate generic assertions. Your locators (e.g. \`page.locator('...')\`) MUST specifically target the exact elements, IDs, classes, or text contents you found in the provided HTML snapshot and Accessibility Tree that relate to this rule.
+- You MUST use standard Playwright locators (e.g. \`page.locator('...')\`) targeting the exact elements using robust selectors (standard CSS selectors, text, ARIA roles, or stable classes/IDs). DO NOT use the \`data-playwright-a11y-id\` attribute in your Playwright locators!
 - If an element violates a rule, write an assertion that EXPECTS it to meet the rule (e.g. if an img lacks an alt, write \`await expect(page.locator('img.logo')).toHaveAttribute('alt', /.+/)\` so the test will accurately fail until the user fixes their code).
 - Wrap the TypeScript code in a single \`\`\`typescript block.
 

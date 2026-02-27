@@ -33,7 +33,8 @@ describe('Modular A11y Rules', () => {
             model: 'test-model',
             url: 'http://test.com',
             html: '<img src="a.png" />',
-            ariaTree: '{}'
+            ariaTree: '{}',
+            screenshot: 'fake-screenshot'
         });
 
         expect(res).toBe('mock AI response');
@@ -41,7 +42,7 @@ describe('Modular A11y Rules', () => {
 
         const callArgs = mockAi.models.generateContent.mock.calls[0][0];
         expect(callArgs.model).toBe('test-model');
-        expect(callArgs.contents).toContain('Images: All `<img>` elements must have an `alt` attribute');
+        expect(callArgs.contents[0]).toContain('Images: All `<img>` elements must have an `alt` attribute');
     });
 });
 
