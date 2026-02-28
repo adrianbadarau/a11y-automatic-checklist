@@ -13,6 +13,7 @@ A Node.js tool that orchestrates Playwright, captures DOM and accessibility tree
   - **✨ Iterative Visual Markers**: Uses Set-of-Mark and up to 3 LLM vision queries to visually find hidden/CSS elements missed by standard locators. ([Read more](./docs/iterative-visual-markers.md))
 - **Visual Playback Mode**: Use `--visual` to launch a headed browser and visually highlight elements matching the accessibility rules as they are evaluated.
 - **Isolate Rules**: Use `--rule <id>` to selectively evaluate just a single rule.
+- **HTML Report Generation**: Use the `--html-report <filename>` flag to skip generating Playwright tests and instead output a visually rich, standalone HTML document detailing the accessibility issues, fixes, and embedded screenshot highlights. 
 - **Test Generation**: Automatically extracts and saves a valid Playwright test (`generated-a11y.spec.ts`) that asserts for accessibility regressions locally on your codebase.
 
 ## Prerequisites
@@ -54,6 +55,12 @@ Start your Chrome browser with remote debugging enabled from your terminal:
 Then run the tool attached to that browser to check whatever page you currently have open! (You can simply pass the localhost debugger URL):
 ```bash
 npx tsx src/index.ts check --debugger-url http://localhost:9222
+```
+
+### 5. Generating an HTML Report
+If you do not want an AI generated Playwright test, but instead want a human-readable HTML report of the accessibility violations with highlighted screenshots, use the `--html-report` flag:
+```bash
+npx tsx src/index.ts check --url https://www.w3.org/WAI/demos/bad/before/home.html --html-report report.html
 ```
 
 ## Running Generated Tests
