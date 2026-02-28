@@ -94,12 +94,16 @@ export class BrowserAdapter {
                     (el as HTMLElement).style.boxShadow = '';
                 });
 
-                document.querySelectorAll(selector).forEach(el => {
-                    el.classList.add('playwright-a11y-highlight');
-                    (el as HTMLElement).style.outline = '4px solid #ff00ff';
-                    (el as HTMLElement).style.outlineOffset = '2px';
-                    (el as HTMLElement).style.boxShadow = '0 0 10px #ff00ff';
-                });
+                try {
+                    document.querySelectorAll(selector).forEach(el => {
+                        el.classList.add('playwright-a11y-highlight');
+                        (el as HTMLElement).style.outline = '4px solid #ff00ff';
+                        (el as HTMLElement).style.outlineOffset = '2px';
+                        (el as HTMLElement).style.boxShadow = '0 0 10px #ff00ff';
+                    });
+                } catch (e) {
+                    // Invalid selector, ignore
+                }
             }, { description: rule.description, selector: rule.selector });
 
             // Wait 2 seconds so the user can see it
@@ -136,36 +140,47 @@ export class BrowserAdapter {
             }
 
             const baseSelectors = ['img', 'a', 'button', 'input', 'select', 'textarea', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', '[role]'];
-            const allSelectors = [...baseSelectors, ...extraSelectors].join(', ');
+            const allSelectors = [...baseSelectors, ...extraSelectors];
 
-            const somElements = targetNode.querySelectorAll(allSelectors);
             let counter = 1;
 
-            somElements.forEach(el => {
-                const rect = el.getBoundingClientRect();
-                // Basic visibility check
-                if (rect.width === 0 || rect.height === 0) return;
+            allSelectors.forEach(selector => {
+                let somElements: NodeListOf<Element>;
+                try {
+                    somElements = targetNode.querySelectorAll(selector);
+                } catch (e) {
+                    // LLM provided an invalid selector
+                    return;
+                }
 
-                const id = counter++;
-                el.setAttribute('data-playwright-a11y-id', id.toString());
+                somElements.forEach(el => {
+                    if (el.hasAttribute('data-playwright-a11y-id')) return; // Already processed
 
-                const badge = document.createElement('div');
-                badge.className = 'playwright-a11y-badge';
-                badge.textContent = id.toString();
-                badge.style.position = 'absolute';
-                badge.style.top = (rect.top + window.scrollY) + 'px';
-                badge.style.left = (rect.left + window.scrollX) + 'px';
-                badge.style.backgroundColor = 'red';
-                badge.style.color = 'white';
-                badge.style.fontSize = '12px';
-                badge.style.fontWeight = 'bold';
-                badge.style.padding = '2px 4px';
-                badge.style.borderRadius = '3px';
-                badge.style.zIndex = '2147483647';
-                badge.style.pointerEvents = 'none';
-                badge.setAttribute('aria-hidden', 'true');
+                    const rect = el.getBoundingClientRect();
+                    // Basic visibility check
+                    if (rect.width === 0 || rect.height === 0) return;
 
-                document.body.appendChild(badge);
+                    const id = counter++;
+                    el.setAttribute('data-playwright-a11y-id', id.toString());
+
+                    const badge = document.createElement('div');
+                    badge.className = 'playwright-a11y-badge';
+                    badge.textContent = id.toString();
+                    badge.style.position = 'absolute';
+                    badge.style.top = (rect.top + window.scrollY) + 'px';
+                    badge.style.left = (rect.left + window.scrollX) + 'px';
+                    badge.style.backgroundColor = 'red';
+                    badge.style.color = 'white';
+                    badge.style.fontSize = '12px';
+                    badge.style.fontWeight = 'bold';
+                    badge.style.padding = '2px 4px';
+                    badge.style.borderRadius = '3px';
+                    badge.style.zIndex = '2147483647';
+                    badge.style.pointerEvents = 'none';
+                    badge.setAttribute('aria-hidden', 'true');
+
+                    document.body.appendChild(badge);
+                });
             });
         }, { cid: containerId, extraSelectors: additionalSelectors });
 
@@ -213,6 +228,67 @@ export class BrowserAdapter {
         }, { cid: containerId, shouldCleanup: !keepBadges });
 
         return { url: this.page.url(), html, ariaTree, screenshot };
+    }
+
+    async highlightAndScreenshotIssue(badgeNumber: number): Promise<string> {
+        if (!this.page) {
+            throw new Error("Page not initialized");
+        }
+
+        return await this.page.evaluate(async (badgeNum) => {
+            // Find element by badge number
+            const el = document.querySelector(`[data-playwright-a11y-id="${badgeNum}"]`) as HTMLElement;
+            if (!el) return "";
+
+            // Save original styles
+            const originalOutline = el.style.outline;
+            const originalOutlineOffset = el.style.outlineOffset;
+            const originalBoxShadow = el.style.boxShadow;
+            const originalPosition = el.style.position;
+            const originalZIndex = el.style.zIndex;
+
+            // Apply highlight
+            el.style.outline = '4px dashed #ff00ff';
+            el.style.outlineOffset = '2px';
+            el.style.boxShadow = '0 0 15px rgba(255, 0, 255, 0.7)';
+            el.style.position = 'relative';
+            el.style.zIndex = '999998';
+
+            el.scrollIntoView({ behavior: 'instant', block: 'center', inline: 'center' });
+
+            // We need to trigger the screenshot from the page context, but playwright's screenshot
+            // is a Node API. We will use a CDP trick or just wait and let the Node context do it.
+            // Wait, we can't take a base64 screenshot directly *inside* evaluate without external libraries.
+            // Let's just highlight it, return true, and do the screenshot in the Node context.
+            return {
+                found: true,
+                origOutline: originalOutline,
+                origOutlineOffset: originalOutlineOffset,
+                origBoxShadow: originalBoxShadow,
+                origPosition: originalPosition,
+                origZIndex: originalZIndex
+            };
+        }, badgeNumber).then(async (result: any) => {
+            if (!result || !result.found) return "";
+
+            // Take the screenshot now that it's highlighted and scrolled into view
+            const screenshotBuffer = await this.page!.screenshot({ type: 'jpeg', quality: 60 });
+            const b64 = screenshotBuffer.toString('base64');
+
+            // Restore original styles
+            await this.page!.evaluate(({ badgeNum, origStyles }) => {
+                const el = document.querySelector(`[data-playwright-a11y-id="${badgeNum}"]`) as HTMLElement;
+                if (el) {
+                    el.style.outline = origStyles.origOutline;
+                    el.style.outlineOffset = origStyles.origOutlineOffset;
+                    el.style.boxShadow = origStyles.origBoxShadow;
+                    el.style.position = origStyles.origPosition;
+                    el.style.zIndex = origStyles.origZIndex;
+                }
+            }, { badgeNum: badgeNumber, origStyles: result });
+
+            return b64;
+        });
     }
 
     async close() {

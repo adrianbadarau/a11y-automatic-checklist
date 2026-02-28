@@ -79,12 +79,17 @@ export class BrowserAdapter {
                     el.style.outlineOffset = '';
                     el.style.boxShadow = '';
                 });
-                document.querySelectorAll(selector).forEach(el => {
-                    el.classList.add('playwright-a11y-highlight');
-                    el.style.outline = '4px solid #ff00ff';
-                    el.style.outlineOffset = '2px';
-                    el.style.boxShadow = '0 0 10px #ff00ff';
-                });
+                try {
+                    document.querySelectorAll(selector).forEach(el => {
+                        el.classList.add('playwright-a11y-highlight');
+                        el.style.outline = '4px solid #ff00ff';
+                        el.style.outlineOffset = '2px';
+                        el.style.boxShadow = '0 0 10px #ff00ff';
+                    });
+                }
+                catch (e) {
+                    // Invalid selector, ignore
+                }
             }, { description: rule.description, selector: rule.selector });
             // Wait 2 seconds so the user can see it
             await new Promise(resolve => setTimeout(resolve, 2000));
@@ -102,25 +107,66 @@ export class BrowserAdapter {
             });
         });
     }
-    async getPageSnapshot(containerId) {
+    async applyBadges(additionalSelectors = [], options = {}) {
         if (!this.page) {
             throw new Error("Page not initialized.");
         }
-        // Get simplified HTML (stripping scripts and styles for LLM context size)
-        const html = await this.page.evaluate((cid) => {
+        const { containerId, visual, keepBadges } = options;
+        // 1. Inject Set-of-Mark badges
+        await this.page.evaluate(({ cid, extraSelectors }) => {
             let targetNode = document.documentElement;
             if (cid) {
                 const el = document.getElementById(cid);
-                if (!el) {
-                    throw new Error(`Container element with id '${cid}' not found on the page.`);
-                }
-                targetNode = el;
+                if (el)
+                    targetNode = el;
             }
-            const clone = targetNode.cloneNode(true);
-            clone.querySelectorAll('script, style, svg').forEach(el => el.remove());
-            return clone.outerHTML;
-        }, containerId);
-        // Get approximate accessibility tree via CDP
+            const baseSelectors = ['img', 'a', 'button', 'input', 'select', 'textarea', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', '[role]'];
+            const allSelectors = [...baseSelectors, ...extraSelectors];
+            let counter = 1;
+            allSelectors.forEach(selector => {
+                let somElements;
+                try {
+                    somElements = targetNode.querySelectorAll(selector);
+                }
+                catch (e) {
+                    // LLM provided an invalid selector
+                    return;
+                }
+                somElements.forEach(el => {
+                    if (el.hasAttribute('data-playwright-a11y-id'))
+                        return; // Already processed
+                    const rect = el.getBoundingClientRect();
+                    // Basic visibility check
+                    if (rect.width === 0 || rect.height === 0)
+                        return;
+                    const id = counter++;
+                    el.setAttribute('data-playwright-a11y-id', id.toString());
+                    const badge = document.createElement('div');
+                    badge.className = 'playwright-a11y-badge';
+                    badge.textContent = id.toString();
+                    badge.style.position = 'absolute';
+                    badge.style.top = (rect.top + window.scrollY) + 'px';
+                    badge.style.left = (rect.left + window.scrollX) + 'px';
+                    badge.style.backgroundColor = 'red';
+                    badge.style.color = 'white';
+                    badge.style.fontSize = '12px';
+                    badge.style.fontWeight = 'bold';
+                    badge.style.padding = '2px 4px';
+                    badge.style.borderRadius = '3px';
+                    badge.style.zIndex = '2147483647';
+                    badge.style.pointerEvents = 'none';
+                    badge.setAttribute('aria-hidden', 'true');
+                    document.body.appendChild(badge);
+                });
+            });
+        }, { cid: containerId, extraSelectors: additionalSelectors });
+        if (visual) {
+            await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+        // 2. Take screenshot with badges injected
+        const screenshotBuffer = await this.page.screenshot({ type: 'jpeg', quality: 60, fullPage: true });
+        const screenshot = screenshotBuffer.toString('base64');
+        // 3. Get ARIA tree via CDP
         let ariaTree = "{}";
         try {
             const client = await this.page.context().newCDPSession(this.page);
@@ -130,10 +176,82 @@ export class BrowserAdapter {
         catch (e) {
             console.warn("Could not fetch CDP accessibility tree:", e.message);
         }
-        // Take a full-page screenshot
-        const screenshotBuffer = await this.page.screenshot({ type: 'jpeg', quality: 60, fullPage: true });
-        const screenshot = screenshotBuffer.toString('base64');
+        // 4. Get HTML and cleanup DOM
+        const html = await this.page.evaluate(({ cid, shouldCleanup }) => {
+            let targetNode = document.documentElement;
+            if (cid) {
+                const el = document.getElementById(cid);
+                if (!el) {
+                    throw new Error(`Container element with id '${cid}' not found on the page.`);
+                }
+                targetNode = el;
+            }
+            // Clone to serialize safely without scripts/styles
+            const clone = targetNode.cloneNode(true);
+            clone.querySelectorAll('script, style, svg, .playwright-a11y-badge').forEach(el => el.remove());
+            const outerHTML = clone.outerHTML;
+            if (shouldCleanup) {
+                // Cleanup the actual page DOM so we don't leave artifacts if the page is re-used
+                document.querySelectorAll('.playwright-a11y-badge').forEach(el => el.remove());
+                document.querySelectorAll('[data-playwright-a11y-id]').forEach(el => el.removeAttribute('data-playwright-a11y-id'));
+            }
+            return outerHTML;
+        }, { cid: containerId, shouldCleanup: !keepBadges });
         return { url: this.page.url(), html, ariaTree, screenshot };
+    }
+    async highlightAndScreenshotIssue(badgeNumber) {
+        if (!this.page) {
+            throw new Error("Page not initialized");
+        }
+        return await this.page.evaluate(async (badgeNum) => {
+            // Find element by badge number
+            const el = document.querySelector(`[data-playwright-a11y-id="${badgeNum}"]`);
+            if (!el)
+                return "";
+            // Save original styles
+            const originalOutline = el.style.outline;
+            const originalOutlineOffset = el.style.outlineOffset;
+            const originalBoxShadow = el.style.boxShadow;
+            const originalPosition = el.style.position;
+            const originalZIndex = el.style.zIndex;
+            // Apply highlight
+            el.style.outline = '4px dashed #ff00ff';
+            el.style.outlineOffset = '2px';
+            el.style.boxShadow = '0 0 15px rgba(255, 0, 255, 0.7)';
+            el.style.position = 'relative';
+            el.style.zIndex = '999998';
+            el.scrollIntoView({ behavior: 'instant', block: 'center', inline: 'center' });
+            // We need to trigger the screenshot from the page context, but playwright's screenshot
+            // is a Node API. We will use a CDP trick or just wait and let the Node context do it.
+            // Wait, we can't take a base64 screenshot directly *inside* evaluate without external libraries.
+            // Let's just highlight it, return true, and do the screenshot in the Node context.
+            return {
+                found: true,
+                origOutline: originalOutline,
+                origOutlineOffset: originalOutlineOffset,
+                origBoxShadow: originalBoxShadow,
+                origPosition: originalPosition,
+                origZIndex: originalZIndex
+            };
+        }, badgeNumber).then(async (result) => {
+            if (!result || !result.found)
+                return "";
+            // Take the screenshot now that it's highlighted and scrolled into view
+            const screenshotBuffer = await this.page.screenshot({ type: 'jpeg', quality: 60 });
+            const b64 = screenshotBuffer.toString('base64');
+            // Restore original styles
+            await this.page.evaluate(({ badgeNum, origStyles }) => {
+                const el = document.querySelector(`[data-playwright-a11y-id="${badgeNum}"]`);
+                if (el) {
+                    el.style.outline = origStyles.origOutline;
+                    el.style.outlineOffset = origStyles.origOutlineOffset;
+                    el.style.boxShadow = origStyles.origBoxShadow;
+                    el.style.position = origStyles.origPosition;
+                    el.style.zIndex = origStyles.origZIndex;
+                }
+            }, { badgeNum: badgeNumber, origStyles: result });
+            return b64;
+        });
     }
     async close() {
         if (this.browser) {

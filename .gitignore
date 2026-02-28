@@ -4,3 +4,4 @@ node_modules
 playwright-report
 test-results
 generated-a11y.spec.ts
+report.html
