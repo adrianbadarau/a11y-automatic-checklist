@@ -21,6 +21,7 @@ program
     .option('-v, --visual', 'Visually highlight elements matching current checking rules in browser')
     .option('-r, --rule <id>', 'Run only a specific rule by its ID')
     .option('-c, --container-id <id>', 'ID of the container element to evaluate (for partial page testing)')
+    .option('--html-report <filename>', 'Generate an HTML report instead of a Playwright test script')
     .action(async (options) => {
     if (!options.url && !options.debuggerUrl) {
         console.error('Error: You must provide either --url or --debugger-url');
@@ -54,25 +55,36 @@ program
             console.log('Running visual playback of accessibility rules...');
             await browserAdapter.visualizeRules(rulesToRun);
         }
-        console.log('Capturing DOM and Accessibility tree...');
-        const snapshot = await browserAdapter.getPageSnapshot(options.containerId);
-        console.log(`Sending snapshot to Gemini for evaluation against ${rulesToRun.length} rule(s)...`);
-        const resultText = await evaluator.evaluatePage(snapshot.url, snapshot.html, snapshot.ariaTree, snapshot.screenshot, rulesToRun);
+        console.log(`Evaluating page using iterative LLM loop against ${rulesToRun.length} rule(s)...`);
+        const targetUrl = options.url || 'http://localhost'; // Evaluator will use snapshot.url anyway
+        const reportType = options.htmlReport ? 'html' : 'playwright';
+        const resultText = await evaluator.evaluatePage(targetUrl, browserAdapter, rulesToRun, {
+            containerId: options.containerId,
+            visual: options.visual,
+            reportType
+        });
         // Print the full evaluation report
         console.log('\n========================================');
         console.log('          EVALUATION REPORT             ');
         console.log('========================================\n');
         console.log(resultText);
-        // Extract the Playwright test code block
-        const tsMatch = resultText.match(/```typescript\n([\s\S]*?)```/);
-        if (tsMatch && tsMatch[1]) {
-            const testCode = tsMatch[1];
-            const outPath = path.resolve(process.cwd(), options.outputTest);
-            await fs.writeFile(outPath, testCode, 'utf-8');
-            console.log(`\n✅ Successfully generated Playwright test script at: ${outPath}`);
+        if (reportType === 'html') {
+            const outPath = path.resolve(process.cwd(), options.htmlReport);
+            await fs.writeFile(outPath, resultText, 'utf-8');
+            console.log(`\n✅ Successfully generated HTML accessibility report at: ${outPath}`);
         }
         else {
-            console.log(`\n⚠️ No typescript block found in Gemini's response. Test script not generated.`);
+            // Extract the Playwright test code block
+            const tsMatch = resultText.match(/```typescript\n([\s\S]*?)```/);
+            if (tsMatch && tsMatch[1]) {
+                const testCode = tsMatch[1];
+                const outPath = path.resolve(process.cwd(), options.outputTest);
+                await fs.writeFile(outPath, testCode, 'utf-8');
+                console.log(`\n✅ Successfully generated Playwright test script at: ${outPath}`);
+            }
+            else {
+                console.log(`\n⚠️ No typescript block found in Gemini's response. Test script not generated.`);
+            }
         }
     }
     catch (err) {
