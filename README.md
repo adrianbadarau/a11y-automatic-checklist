@@ -8,11 +8,12 @@ A Node.js tool that orchestrates Playwright, captures DOM and accessibility tree
 - **Two Execution Modes**: 
   - Standard `--url <URL>` to launch a headless browser.
   - Remote Debugger `--debugger-url <URL>` to attach to an open Chrome browser and check the *exact page* the user is currently on! You can pass a simple HTTP endpoint (like `http://localhost:9222`) or a full websocket URL.
-- **AI Accessibility Evaluator**: Extracts a stripped-down HTML snapshot and the Chromium Accessibility Tree, combined with Deque reference rules, feeding into `gemini-2.5-flash`.
+- **AI Accessibility Evaluator**: Extracts a stripped-down HTML snapshot and the Chromium Accessibility Tree, combined with Deque reference rules, feeding into `gemini-3-flash-preview` by default (can be overridden with `--model`).
   - **✨ Modular Rules**: Rules are now evaluated concurrently in isolated modules, eliminating "1-shot" hallucinations.
   - **✨ Iterative Visual Markers**: Uses Set-of-Mark and up to 3 LLM vision queries to visually find hidden/CSS elements missed by standard locators. ([Read more](./docs/iterative-visual-markers.md))
 - **Visual Playback Mode**: Use `--visual` to launch a headed browser and visually highlight elements matching the accessibility rules as they are evaluated.
 - **Isolate Rules**: Use `--rule <id>` to selectively evaluate just a single rule.
+- **Model Selection**: Choose your preferred Gemini model (e.g., `gemini-3-pro-preview`, `gemini-3.1-pro-preview`, `gemini-2.5-computer-use-preview-10-2025`) via the `--model` flag. If omitted, defaults to `gemini-3-flash-preview`.
 - **HTML Report Generation**: Use the `--html-report <filename>` flag to skip generating Playwright tests and instead output a visually rich, standalone HTML document detailing the accessibility issues, fixes, and embedded screenshot highlights. ([Read more](./docs/html-report.md))
 - **Test Generation**: Automatically extracts and saves a valid Playwright test (`generated-a11y.spec.ts`) that asserts for accessibility regressions locally on your codebase.
 

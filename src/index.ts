@@ -27,6 +27,7 @@ program
     .option('-r, --rule <id>', 'Run only a specific rule by its ID')
     .option('-c, --container-id <id>', 'ID of the container element to evaluate (for partial page testing)')
     .option('--html-report <filename>', 'Generate an HTML report instead of a Playwright test script')
+    .option('-m, --model <name>', 'The Gemini model to use', 'gemini-3-flash-preview')
     .action(async (options) => {
         if (!options.url && !options.debuggerUrl) {
             console.error('Error: You must provide either --url or --debugger-url');
@@ -49,7 +50,7 @@ program
         }
 
         const browserAdapter = new BrowserAdapter();
-        const evaluator = new A11yEvaluator(process.env.GEMINI_API_KEY);
+        const evaluator = new A11yEvaluator(process.env.GEMINI_API_KEY, options.model);
 
         try {
             if (options.debuggerUrl) {

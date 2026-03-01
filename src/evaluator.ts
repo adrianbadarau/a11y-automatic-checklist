@@ -3,12 +3,13 @@ import { A11yRule, RuleOptions } from './rules/index.js';
 
 export class A11yEvaluator {
     private ai: GoogleGenAI;
-    private model = 'gemini-2.5-flash';
+    private model: string;
 
-    constructor(apiKey?: string) {
+    constructor(apiKey?: string, model: string = 'gemini-3-flash-preview') {
         if (!apiKey) {
             throw new Error("Missing GEMINI_API_KEY environment variable. Please set it.");
         }
+        this.model = model;
         this.ai = new GoogleGenAI({ apiKey });
     }
 
