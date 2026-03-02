@@ -1,11 +1,12 @@
 import { GoogleGenAI } from '@google/genai';
 export class A11yEvaluator {
     ai;
-    model = 'gemini-2.5-flash';
-    constructor(apiKey) {
+    model;
+    constructor(apiKey, model = 'gemini-3-flash-preview') {
         if (!apiKey) {
             throw new Error("Missing GEMINI_API_KEY environment variable. Please set it.");
         }
+        this.model = model;
         this.ai = new GoogleGenAI({ apiKey });
     }
     async evaluatePage(initialUrl, browserAdapter, rules, options = {}) {
@@ -14,7 +15,7 @@ export class A11yEvaluator {
         let ariaTree = "";
         let screenshot = "";
         let url = initialUrl;
-        const MAX_ITERATIONS = 3;
+        const MAX_ITERATIONS = options.iterations || 1;
         for (let i = 0; i < MAX_ITERATIONS; i++) {
             const isLastIteration = i === MAX_ITERATIONS - 1;
             const keepBadges = options.visual || isLastIteration;
