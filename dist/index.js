@@ -22,6 +22,8 @@ program
     .option('-r, --rule <id>', 'Run only a specific rule by its ID')
     .option('-c, --container-id <id>', 'ID of the container element to evaluate (for partial page testing)')
     .option('--html-report <filename>', 'Generate an HTML report instead of a Playwright test script')
+    .option('-m, --model <name>', 'The Gemini model to use', 'gemini-3-flash-preview')
+    .option('-i, --iterations <number>', 'Number of iterations to run the LLM loop for visual evaluation', '1')
     .action(async (options) => {
     if (!options.url && !options.debuggerUrl) {
         console.error('Error: You must provide either --url or --debugger-url');
@@ -41,7 +43,7 @@ program
         console.log(`Partial page testing enabled for container ID: '${options.containerId}'. Filtered rules: ${rulesToRun.length} remaining.`);
     }
     const browserAdapter = new BrowserAdapter();
-    const evaluator = new A11yEvaluator(process.env.GEMINI_API_KEY);
+    const evaluator = new A11yEvaluator(process.env.GEMINI_API_KEY, options.model);
     try {
         if (options.debuggerUrl) {
             console.log(`Attaching to existing browser at ${options.debuggerUrl}...`);
@@ -58,10 +60,12 @@ program
         console.log(`Evaluating page using iterative LLM loop against ${rulesToRun.length} rule(s)...`);
         const targetUrl = options.url || 'http://localhost'; // Evaluator will use snapshot.url anyway
         const reportType = options.htmlReport ? 'html' : 'playwright';
+        const iterations = parseInt(options.iterations, 10) || 1;
         const resultText = await evaluator.evaluatePage(targetUrl, browserAdapter, rulesToRun, {
             containerId: options.containerId,
             visual: options.visual,
-            reportType
+            reportType,
+            iterations
         });
         // Print the full evaluation report
         console.log('\n========================================');

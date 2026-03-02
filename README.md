@@ -14,6 +14,7 @@ A Node.js tool that orchestrates Playwright, captures DOM and accessibility tree
 - **Visual Playback Mode**: Use `--visual` to launch a headed browser and visually highlight elements matching the accessibility rules as they are evaluated.
 - **Isolate Rules**: Use `--rule <id>` to selectively evaluate just a single rule.
 - **Model Selection**: Choose your preferred Gemini model (e.g., `gemini-3-pro-preview`, `gemini-3.1-pro-preview`, `gemini-2.5-computer-use-preview-10-2025`) via the `--model` flag. If omitted, defaults to `gemini-3-flash-preview`.
+- **Iteration Control**: Use `-i, --iterations <number>` to control how many times the visual LLM loop runs to search for missing elements (defaults to 1).
 - **HTML Report Generation**: Use the `--html-report <filename>` flag to skip generating Playwright tests and instead output a visually rich, standalone HTML document detailing the accessibility issues, fixes, and embedded screenshot highlights. ([Read more](./docs/html-report.md))
 - **Test Generation**: Automatically extracts and saves a valid Playwright test (`generated-a11y.spec.ts`) that asserts for accessibility regressions locally on your codebase.
 

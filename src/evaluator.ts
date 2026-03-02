@@ -13,14 +13,14 @@ export class A11yEvaluator {
         this.ai = new GoogleGenAI({ apiKey });
     }
 
-    async evaluatePage(initialUrl: string, browserAdapter: any, rules: A11yRule[], options: { containerId?: string, visual?: boolean, reportType?: 'playwright' | 'html' } = {}): Promise<string> {
+    async evaluatePage(initialUrl: string, browserAdapter: any, rules: A11yRule[], options: { containerId?: string, visual?: boolean, reportType?: 'playwright' | 'html', iterations?: number } = {}): Promise<string> {
         let additionalSelectors: string[] = [];
         let html = "";
         let ariaTree = "";
         let screenshot = "";
         let url = initialUrl;
 
-        const MAX_ITERATIONS = 3;
+        const MAX_ITERATIONS = options.iterations || 1;
         for (let i = 0; i < MAX_ITERATIONS; i++) {
             const isLastIteration = i === MAX_ITERATIONS - 1;
             const keepBadges = options.visual || isLastIteration;
