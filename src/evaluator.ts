@@ -89,8 +89,10 @@ Respond ONLY with the JSON array.
             reportType: options.reportType
         };
 
-        const rulePromises = rules.map(rule => rule.evaluate(ruleOptions));
-        const results = await Promise.all(rulePromises);
+        const results: string[] = [];
+        for (const rule of rules) {
+            results.push(await rule.evaluate(ruleOptions));
+        }
 
         if (options.reportType === 'html') {
             const allIssues: any[] = [];

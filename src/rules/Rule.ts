@@ -27,7 +27,7 @@ Provide two sections in your response:
 2. "## Playwright Test": One or more valid Playwright \`test('...', async ({ page }) => { ... })\` blocks that cover regressions for the elements mentioned.
 
 CRITICAL TEST REQUIREMENTS:
-- DO NOT include \`import\` statements at all. They are already provided. DO NOT include \`test.describe\`, or \`test.beforeEach\` blocks. Only provide the \`test(...)\` blocks themselves.
+- DO NOT INCLUDE ANY \`import\` STATEMENTS WHATSOEVER. The imports are already placed at the top of the file! Including them WILL CRASH the suite! DO NOT include \`test.describe\`, or \`test.beforeEach\` blocks. Only provide the \`test(...)\` blocks themselves.
 - You MUST use standard Playwright locators (e.g. \`page.locator('...')\`) targeting the exact elements using robust selectors (standard CSS selectors, text, ARIA roles, or stable classes/IDs). DO NOT use the \`data-playwright-a11y-id\` attribute in your Playwright locators!
 - If an element violates a rule, write an assertion that EXPECTS it to meet the rule (e.g. if an img lacks an alt, write \`await expect(page.locator('img.logo')).toHaveAttribute('alt', /.+/)\` so the test will accurately fail until the user fixes their code).
 - Wrap the TypeScript code in a single \`\`\`typescript block.
