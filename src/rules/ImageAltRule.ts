@@ -4,5 +4,5 @@ export class ImageAltRule extends A11yRule {
     readonly id = 1;
     readonly description = 'Images missing alt attributes';
     readonly selector = 'img';
-    protected readonly promptText = '1. Images: All `<img>` elements must have an `alt` attribute. Decorative images should have empty `alt=""`.';
+    protected readonly promptText = '1. Images: All `<img>` elements must have an `alt` attribute. Decorative images should have empty `alt=""`. Informative background images must have an accessible name, and active elements with only background images must have a name. Avoid images of text (WCAG 1.4.5) unless essential.';
 }

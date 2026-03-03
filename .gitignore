@@ -5,3 +5,5 @@ playwright-report
 test-results
 generated-a11y.spec.ts
 report.html
+pdf_text.txt
+web-accessibility-checklist-wcag-2.2.pdf
