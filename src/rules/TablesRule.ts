@@ -4,5 +4,5 @@ export class TablesRule extends A11yRule {
     readonly id = 10;
     readonly description = 'Data and Layout Tables';
     readonly selector = 'table, th, td';
-    protected readonly promptText = '10. Tables: Data tables MUST NOT be used for pure visual layout. Data tables MUST have `<th>` headers with accurate category descriptions, correctly associated with data cells using `scope="col"` or `scope="row"`. A meaningful `<caption>` must describe the purpose of the table uniquely within the page.';
+    readonly promptText = '10. Tables: Data tables MUST NOT be used for pure visual layout. Data tables MUST have `<th>` headers with accurate category descriptions, correctly associated with data cells using `scope="col"` or `scope="row"`. A meaningful `<caption>` must describe the purpose of the table uniquely within the page.';
 }

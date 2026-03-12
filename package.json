@@ -8,15 +8,21 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "dev": "tsx src/index.ts",
+    "dev:agent": "tsx src/agent-cli.ts",
     "test": "vitest run",
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@google/gemini-cli": "github:google-gemini/gemini-cli#d0ca05329390b75b714ac372afb412c824f611db",
+    "@google/gemini-cli-core": "file:../../../../../tmp/gemini-cli/packages/core/google-gemini-cli-core-0.35.0-nightly.20260311.657f19c1f.tgz",
+    "@google/gemini-cli-sdk": "file:../../../../../tmp/gemini-cli/packages/sdk/google-gemini-cli-sdk-0.35.0-nightly.20260311.657f19c1f.tgz",
     "@google/genai": "^1.42.0",
     "@playwright/test": "^1.50.1",
     "commander": "^13.1.0",
     "dotenv": "^16.4.7",
-    "playwright": "^1.50.1"
+    "playwright": "^1.50.1",
+    "zod": "^4.3.6",
+    "zod-to-json-schema": "^3.25.1"
   },
   "devDependencies": {
     "@types/node": "^22.13.4",

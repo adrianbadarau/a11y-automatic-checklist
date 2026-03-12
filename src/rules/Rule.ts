@@ -15,7 +15,7 @@ export abstract class A11yRule {
     abstract readonly description: string;
     abstract readonly selector: string;
     readonly fullPageOnly?: boolean;
-    protected abstract readonly promptText: string;
+    abstract readonly promptText: string;
 
     /**
      * Evaluates the provided HTML/ARIA tree against this specific rule using the LLM.
